@@ -1,0 +1,12 @@
+=== Lambda Zip ===
+$LATEST	200
+{"statusCode": 200, "headers": {"Content-Type": "application/json", "X-Server-Time-Ms": "74.872", "X-Instance-Id": "2026/03/28/[$LATEST]0a6cd23edd9a4488be57a834390afcb6", "X-Cold-Start": "true"}, "body": "{\"results\": [{\"index\": 35859, \"distance\": 12.001459121704102}, {\"index\": 24682, \"distance\": 12.059946060180664}, {\"index\": 35397, \"distance\": 12.487079620361328}, {\"index\": 20160, \"distance\": 12.489519119262695}, {\"index\": 30454, \"distance\": 12.499402046203613}], \"query_time_ms\": 74.872, \"instance_id\": \"2026/03/28/[$LATEST]0a6cd23edd9a4488be57a834390afcb6\", \"cold_start\": true}"}
+=== Lambda Container ===
+$LATEST	200
+{"statusCode": 200, "headers": {"Content-Type": "application/json", "X-Server-Time-Ms": "85.381", "X-Instance-Id": "2026/03/28/[$LATEST]5141c5ed60ef4f1f8b942c5c040ab21f", "X-Cold-Start": "false"}, "body": "{\"results\": [{\"index\": 35859, \"distance\": 12.001459121704102}, {\"index\": 24682, \"distance\": 12.059946060180664}, {\"index\": 35397, \"distance\": 12.487079620361328}, {\"index\": 20160, \"distance\": 12.489519119262695}, {\"index\": 30454, \"distance\": 12.499402046203613}], \"query_time_ms\": 85.381, \"instance_id\": \"2026/03/28/[$LATEST]5141c5ed60ef4f1f8b942c5c040ab21f\", \"cold_start\": false}"}
+=== Fargate ===
+{"instance_id":"ip-172-31-37-181.ec2.internal","query_time_ms":22.903,"results":[{"distance":12.001459121704102,"index":35859},{"distance":12.059946060180664,"index":24682},{"distance":12.487079620361328,"index":35397},{"distance":12.489519119262695,"index":20160},{"distance":12.499402046203613,"index":30454}]}
+
+=== EC2 ===
+{"instance_id":"fd980ac3f4a3","query_time_ms":23.573,"results":[{"distance":12.001459121704102,"index":35859},{"distance":12.059946060180664,"index":24682},{"distance":12.487079620361328,"index":35397},{"distance":12.489519119262695,"index":20160},{"distance":12.499402046203613,"index":30454}]}
+
