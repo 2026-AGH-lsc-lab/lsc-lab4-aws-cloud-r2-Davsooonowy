@@ -66,20 +66,20 @@ Full terminal output: `results/assignment-1-endpoints.txt`
 
 ## Assignment 3: Scenario B — Warm Steady-State Throughput
 
-500 requests per run. Lambda client-side p50/p95/p99 not available (SigV4 auth failure in oha — all 403). Lambda server-side timing collected via `aws lambda invoke` (20 warm invocations). Fargate/EC2 server avg from response body `query_time_ms` (10 samples).
+500 requests per run, all HTTP 200. Lambda server avg from `aws lambda invoke` (20 warm invocations). Fargate/EC2 server avg from `query_time_ms` response field (10 curl samples).
 
 | Environment | Concurrency | p50 (ms) | p95 (ms) | p99 (ms) | Server avg (ms) |
 |-------------|-------------|----------|----------|----------|-----------------|
-| Lambda (zip) | 5 | n/a | n/a | n/a | 76 |
-| Lambda (zip) | 10 | n/a | n/a | n/a | 76 |
-| Lambda (container) | 5 | n/a | n/a | n/a | 79 |
-| Lambda (container) | 10 | n/a | n/a | n/a | 79 |
-| Fargate | 10 | 802 | 1001 | 1198 | 24 |
-| Fargate | 50 | 3993 | 4294 | 4464 | 24 |
-| EC2 | 10 | 354 | 422 | 466 | 25 |
-| EC2 | 50 | 903 | 1114 | 1238 | 25 |
+| Lambda (zip) | 5 | 242 | 271 | 573 ⚠️ | 76 |
+| Lambda (zip) | 10 | 236 | 262 | 558 ⚠️ | 76 |
+| Lambda (container) | 5 | 240 | 265 | 544 ⚠️ | 79 |
+| Lambda (container) | 10 | 237 | 274 | 573 ⚠️ | 79 |
+| Fargate | 10 | 797 | 1002 | 1104 | 24 |
+| Fargate | 50 | 3997 | 4206 | 4366 | 24 |
+| EC2 | 10 | 394 | 522 | 792 | 25 |
+| EC2 | 50 | 924 | 1105 | 1334 | 25 |
 
-**Tail instability (p99 > 2× p95):** None in the valid (non-403) results. Fargate c=50 p99/p95 = 1.04×, EC2 c=50 = 1.11×.
+⚠️ p99 > 2× p95. **Tail instability:** All Lambda rows show p99/p95 ≈ 2.1× — caused by occasional cold starts during the 500-request run (some execution environments get recycled), spiking p99 to ~560–573ms.
 
 **Why Lambda p50 is flat across c=5 and c=10:** Each request runs in its own isolated execution environment. There is no resource sharing or queuing between concurrent invocations — server-side duration stays at ~76–79 ms regardless of concurrency.
 
@@ -95,18 +95,16 @@ Full terminal output: `results/assignment-1-endpoints.txt`
 
 | Environment | p50 (ms) | p95 (ms) | p99 (ms) | max (ms) | Cold starts |
 |-------------|----------|----------|----------|----------|-------------|
-| Lambda (zip) | n/a (403) | n/a | n/a | n/a | 0 (not invoked) |
-| Lambda (container) | n/a (403) | n/a | n/a | n/a | 0 (not invoked) |
-| EC2 | 945 | 1247 | 1582 | 1663 | 0 (always warm) |
-| Fargate | 3912 | 4303 | 4561 | 4667 | 0 (always warm) |
+| Lambda (zip) | 237 | 598 | 649 | 651 | **10** (avg Init 614 ms) |
+| Lambda (container) | 236 | 594 | 638 | 647 | **10** (avg Init 605 ms) |
+| EC2 | 900 | 1206 | 1356 | 1474 | 0 (always warm) |
+| Fargate | 3818 | 4220 | 4398 | 4451 | 0 (always warm) |
 
-Lambda was not invoked (auth failure), so 0 cold starts recorded in CloudWatch during this window.
+**Bimodal distribution confirmed for Lambda:** histogram shows two distinct clusters — warm requests at 175–318ms (190 out of 200) and cold start requests at 557–651ms (10 out of 200, one per concurrent worker). The gap between clusters is ~360ms.
 
-**Estimated Lambda burst behaviour** (from Assignment 2 cold start data): With c=10 after 20 min idle, all 10 execution environments would cold-start simultaneously. Expected bimodal distribution: warm cluster ~275 ms, cold-start cluster ~900 ms. Lambda **would fail the SLO** — Init Duration alone (~624 ms) exceeds the 500 ms budget.
+**SLO assessment (p99 < 500 ms):** No environment meets the SLO. Lambda p99 649ms is dominated by cold start Init (~614ms). EC2 p99 1356ms and Fargate p99 4398ms are dominated by network RTT + queuing from outside AWS.
 
-**Why Lambda burst p99 >> Fargate/EC2 (warm):** Lambda cold starts are an initialisation penalty unique to serverless. Fargate and EC2 failures under burst are resource saturation (queuing) — a different failure mode that worsens with load but is not present on the first request.
-
-**SLO assessment (p99 < 500 ms):** No environment meets the SLO under burst from outside AWS. EC2 (1582 ms) and Fargate (4561 ms) are dominated by network RTT + queuing. Lambda (estimated ~900 ms) is dominated by cold start init.
+**Fix for Lambda:** Provisioned Concurrency eliminates cold starts → estimated p99 ≈ 278ms ✅
 
 ---
 
